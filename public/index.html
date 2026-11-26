@@ -11,9 +11,9 @@
       <h1>Fund share desk</h1>
 
       <section>
-        <h2>Issuer</h2>
-        <input id="issuer" type="text" />
-        <button type="button" id="save-issuer">Save session</button>
+        <h2>Issuer sign-in</h2>
+        <input id="issuer-token" type="password" placeholder="Issuer token (printed by the server)" autocomplete="off" />
+        <p class="hint">Only the issuer token can add holders. It stays in this tab's memory and is not saved.</p>
       </section>
 
       <section>
@@ -26,6 +26,7 @@
           <option value="restricted">restricted</option>
         </select>
         <button type="button" id="add">Add</button>
+        <p id="add-result" class="result"></p>
       </section>
 
       <section>

@@ -1,7 +1,7 @@
-const SESSION_KEY = "desk.issuer";
-// PROBLEM 1
-
-const issuerInput = document.getElementById("issuer");
+// The issuer token is kept in memory for this tab only. It is sent as a bearer token,
+// and the server decides who the caller is. The page never names the caller itself.
+const tokenInput = document.getElementById("issuer-token");
+const addResult = document.getElementById("add-result");
 const holderIdInput = document.getElementById("holder-id");
 const labelInput = document.getElementById("label");
 const allocationInput = document.getElementById("allocation");
@@ -16,12 +16,27 @@ let statusFilter = "all";
 let rows = [];
 
 async function api(action, payload) {
+  const headers = { "Content-Type": "application/json" };
+  const token = tokenInput.value.trim();
+  if (token) {
+    headers.Authorization = "Bearer " + token;
+  }
   const response = await fetch("/api", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: headers,
     body: JSON.stringify(Object.assign({ action: action }, payload || {})),
   });
   return response.json();
+}
+
+function showResult(el, result, okText) {
+  if (result && result.ok === false) {
+    el.textContent = "Failed: " + result.error;
+    el.className = "result error";
+  } else {
+    el.textContent = okText;
+    el.className = "result ok";
+  }
 }
 
 async function refresh() {
@@ -51,19 +66,14 @@ function render() {
   });
 }
 
-function saveIssuer() {
-  localStorage.setItem(SESSION_KEY, issuerInput.value);
-}
-
 async function addHolder() {
-  await api("add", {
-    // PROBLEM 1
-    caller: issuerInput.value || "ops",
+  const result = await api("add", {
     holder: holderIdInput.value,
-    allocation: Number(allocationInput.value) || 100,
+    allocation: allocationInput.value,
     label: labelInput.value,
     status: statusInput.value,
   });
+  showResult(addResult, result, "Added " + holderIdInput.value.trim());
   refresh();
 }
 
@@ -85,9 +95,6 @@ async function lookup() {
   lookupResult.textContent = "remaining=" + value;
 }
 
-issuerInput.value = localStorage.getItem(SESSION_KEY) || "ops";
-
-document.getElementById("save-issuer").addEventListener("click", saveIssuer);
 document.getElementById("add").addEventListener("click", addHolder);
 document.getElementById("issue").addEventListener("click", issue);
 document.getElementById("lookup").addEventListener("click", lookup);
