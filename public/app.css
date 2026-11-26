@@ -49,6 +49,25 @@ button {
   font-weight: 700;
 }
 
+.hint {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: #486581;
+}
+
+.result {
+  margin: 0 0 8px;
+  min-height: 1em;
+}
+
+.result.ok {
+  color: #1f7a4d;
+}
+
+.result.error {
+  color: #b42318;
+}
+
 #rows {
   list-style: none;
   padding: 0;

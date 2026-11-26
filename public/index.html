@@ -11,9 +11,9 @@
       <h1>Fund share desk</h1>
 
       <section>
-        <h2>Issuer</h2>
-        <input id="issuer" type="text" />
-        <button type="button" id="save-issuer">Save session</button>
+        <h2>Issuer sign-in</h2>
+        <input id="issuer-token" type="password" placeholder="Issuer token (printed by the server)" autocomplete="off" />
+        <p class="hint">Only the issuer token can add holders. It stays in this tab's memory and is not saved.</p>
       </section>
 
       <section>
@@ -26,6 +26,7 @@
           <option value="restricted">restricted</option>
         </select>
         <button type="button" id="add">Add</button>
+        <p id="add-result" class="result"></p>
       </section>
 
       <section>
@@ -33,13 +34,22 @@
         <p id="pool">0</p>
         <input id="issue-amount" type="text" placeholder="Issue amount" />
         <button type="button" id="issue">Issue</button>
+        <p id="issue-result" class="result"></p>
+      </section>
+
+      <section>
+        <h2>Redeem</h2>
+        <input id="redeem-holder" type="text" placeholder="Holder id (tap a holder below to fill)" />
+        <input id="redeem-amount" type="text" placeholder="Redeem amount" />
+        <button type="button" id="redeem">Redeem</button>
+        <p id="redeem-result" class="result"></p>
       </section>
 
       <section>
         <h2>Remaining</h2>
         <input id="lookup-id" type="text" placeholder="Holder id" />
         <button type="button" id="lookup">Lookup</button>
-        <p id="lookup-result"></p>
+        <p id="lookup-result" class="result"></p>
       </section>
 
       <section>
