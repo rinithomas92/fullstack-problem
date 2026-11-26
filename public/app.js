@@ -50,18 +50,24 @@ function showResult(el, result, okText) {
 async function refresh() {
   const pool = await api("pool");
   poolLine.textContent = pool && pool.ok ? String(pool.pool) : "unavailable";
-  rows = await api("list");
+  const list = await api("list");
+  rows = list && list.ok ? list.holders : [];
   render();
 }
 
 function render() {
-  const visible = rows;
-  // PROBLEM 3
-  rowsEl.innerHTML = "";
+  const visible =
+    statusFilter === "all" ? rows : rows.filter((holder) => holder.status === statusFilter);
+  rowsEl.replaceChildren();
   visible.forEach((holder) => {
     const item = document.createElement("li");
-    item.textContent = "<b>" + holder.label + "</b> " + holder.id + " remaining=" + holder.remaining;
-    // PROBLEM 3
+    // Build the row from elements and text nodes so the label is bold and never parsed as HTML.
+    const name = document.createElement("b");
+    name.textContent = holder.label;
+    item.appendChild(name);
+    item.appendChild(
+      document.createTextNode(" " + holder.id + " (" + holder.status + ") remaining=" + holder.remaining)
+    );
     item.addEventListener("click", function () {
       // Selecting a row only fills the redeem form; the operator chooses the amount.
       redeemHolderInput.value = holder.id;
@@ -106,8 +112,17 @@ async function redeem() {
 }
 
 async function lookup() {
-  const value = await api("remaining", { holder: lookupIdInput.value });
-  lookupResult.textContent = "remaining=" + value;
+  const result = await api("remaining", { holder: lookupIdInput.value });
+  if (result && result.ok) {
+    lookupResult.textContent = result.holder + " remaining=" + result.remaining;
+    lookupResult.className = "result ok";
+  } else if (result && result.code === "not_found") {
+    lookupResult.textContent = "Not listed: no holder with that id";
+    lookupResult.className = "result error";
+  } else {
+    lookupResult.textContent = "Failed: " + (result ? result.error : "unknown error");
+    lookupResult.className = "result error";
+  }
 }
 
 document.getElementById("add").addEventListener("click", addHolder);

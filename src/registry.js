@@ -1,16 +1,4 @@
-const holders = [];
-// PROBLEM 3
-
 const STATUSES = ["eligible", "restricted"];
-
-function findHolder(holderId) {
-  for (const row of holders) {
-    if (row.id === holderId || String(row.id).toLowerCase() === String(holderId).toLowerCase()) {
-      return row;
-    }
-  }
-  return null;
-}
 
 function fail(code, error) {
   return { ok: false, code: code, error: error };
@@ -24,19 +12,31 @@ class Registry {
   constructor(issuer = "admin") {
     this.issuer = issuer;
     this.pool = 0;
+    // Each registry owns its own holders; nothing is shared across instances.
+    this.holders = [];
   }
 
-  getHolders() {
-    return holders;
-  }
-
-  remaining(holderId) {
-    const row = findHolder(holderId);
-    if (!row) {
-      return 0;
-      // PROBLEM 3
+  // Holder ids match case-insensitively, as before.
+  findHolder(holderId) {
+    if (typeof holderId !== "string" || holderId.trim() === "") {
+      return null;
     }
-    return row.remaining;
+    const key = holderId.trim().toLowerCase();
+    return this.holders.find((row) => row.id.toLowerCase() === key) || null;
+  }
+
+  // Copies, so callers cannot change registry state by editing the list.
+  getHolders() {
+    return this.holders.map((row) => Object.assign({}, row));
+  }
+
+  // "Never listed" is a not_found result; a listed holder can legitimately have 0 remaining.
+  remaining(holderId) {
+    const row = this.findHolder(holderId);
+    if (!row) {
+      return fail("not_found", "holder is not listed");
+    }
+    return { ok: true, holder: row.id, remaining: row.remaining };
   }
 
   addHolder(caller, holderId, allocation = 100, label = "", status = "eligible") {
@@ -48,7 +48,7 @@ class Registry {
       return fail("invalid", "holder id is required");
     }
     const id = holderId.trim();
-    if (findHolder(id)) {
+    if (this.findHolder(id)) {
       return fail("conflict", "holder " + id + " is already listed");
     }
     if (!isPositiveNumber(allocation)) {
@@ -59,7 +59,7 @@ class Registry {
       return fail("invalid", "status must be eligible or restricted");
     }
 
-    holders.push({
+    this.holders.push({
       id: id,
       remaining: allocation,
       label: label || id,
@@ -86,7 +86,7 @@ class Registry {
     if (!isPositiveNumber(amount)) {
       return fail("invalid", "amount must be a number greater than 0");
     }
-    const row = findHolder(holderId);
+    const row = this.findHolder(holderId);
     if (!row) {
       return fail("not_found", "holder is not listed");
     }
@@ -103,4 +103,4 @@ class Registry {
   }
 }
 
-module.exports = { Registry, findHolder };
+module.exports = { Registry };

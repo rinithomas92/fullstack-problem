@@ -96,12 +96,12 @@ function handle(reg, action, payload, caller) {
   }
 
   if (action === "remaining") {
+    // not_found (404) for a holder that was never listed; a real 0 is { ok: true, remaining: 0 }.
     return reg.remaining(payload.holder);
-    // PROBLEM 3
   }
 
   if (action === "list") {
-    return reg.getHolders();
+    return { ok: true, holders: reg.getHolders() };
   }
 
   return { ok: false, code: "invalid", error: "unknown action" };
