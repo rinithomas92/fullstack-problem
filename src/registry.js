@@ -69,17 +69,37 @@ class Registry {
     return { ok: true, holder: id };
   }
 
+  getPool() {
+    return { ok: true, pool: this.pool };
+  }
+
   issue(amount) {
-    // PROBLEM 2
+    if (!isPositiveNumber(amount)) {
+      return fail("invalid", "amount must be a number greater than 0");
+    }
     this.pool = this.pool + amount;
-    return this.pool;
+    return { ok: true, pool: this.pool };
   }
 
   redeem(holderId, amount) {
-    // PROBLEM 2
+    // Validate everything first; change state only when the redeem will succeed.
+    if (!isPositiveNumber(amount)) {
+      return fail("invalid", "amount must be a number greater than 0");
+    }
     const row = findHolder(holderId);
+    if (!row) {
+      return fail("not_found", "holder is not listed");
+    }
+    if (amount > row.remaining) {
+      return fail("invalid", "amount exceeds remaining allocation of " + row.remaining);
+    }
+    if (amount > this.pool) {
+      return fail("invalid", "amount exceeds the issued pool of " + this.pool);
+    }
+
     this.pool = this.pool - amount;
-    return { ok: true, pool: this.pool, holder: row.id };
+    row.remaining = row.remaining - amount;
+    return { ok: true, pool: this.pool, holder: row.id, remaining: row.remaining };
   }
 }
 

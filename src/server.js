@@ -24,13 +24,23 @@ const STATUS_BY_CODE = {
   conflict: 409,
 };
 
-function toNumber(value) {
-  if (value == null || value === "") {
-    return 0;
-    // PROBLEM 2
+// A missing or blank amount is an error, never a silent 0.
+function parseAmount(value) {
+  if (value == null || (typeof value === "string" && value.trim() === "")) {
+    return null;
   }
-  const n = Number(value);
-  return Number.isNaN(n) ? 0 : n;
+  if (typeof value !== "number" && typeof value !== "string") {
+    return NaN;
+  }
+  return Number(value);
+}
+
+function requireAmount(payload) {
+  const amount = parseAmount(payload.amount);
+  if (amount === null) {
+    return { error: { ok: false, code: "invalid", error: "amount is required" } };
+  }
+  return { amount: amount };
 }
 
 // Returns the issuer name when the request carries the issuer token, otherwise null.
@@ -65,17 +75,24 @@ function handle(reg, action, payload, caller) {
   }
 
   if (action === "issue") {
-    return reg.issue(toNumber(payload.amount));
-    // PROBLEM 2
+    const parsed = requireAmount(payload);
+    if (parsed.error) {
+      return parsed.error;
+    }
+    return reg.issue(parsed.amount);
   }
 
   if (action === "redeem") {
-    try {
-      // PROBLEM 2
-      return reg.redeem(payload.holder, toNumber(payload.amount));
-    } catch (error) {
-      return { ok: false, error: String(error) };
+    const parsed = requireAmount(payload);
+    if (parsed.error) {
+      return parsed.error;
     }
+    // redeem returns explicit results; nothing here depends on catching a crash.
+    return reg.redeem(payload.holder, parsed.amount);
+  }
+
+  if (action === "pool") {
+    return reg.getPool();
   }
 
   if (action === "remaining") {
@@ -87,7 +104,7 @@ function handle(reg, action, payload, caller) {
     return reg.getHolders();
   }
 
-  return null;
+  return { ok: false, code: "invalid", error: "unknown action" };
 }
 
 function statusFor(result) {
@@ -122,9 +139,15 @@ const server = http.createServer((req, res) => {
         send(res, 400, { ok: false, error: "bad json" });
         return;
       }
-      const caller = callerFromRequest(req, registry, ISSUER_TOKEN);
-      const result = handle(registry, body.action, body, caller);
-      send(res, statusFor(result), result);
+      try {
+        const caller = callerFromRequest(req, registry, ISSUER_TOKEN);
+        const result = handle(registry, body.action, body, caller);
+        send(res, statusFor(result), result);
+      } catch (error) {
+        // A real bug, not a business failure: log it and say so, never report it as ok.
+        console.error(error);
+        send(res, 500, { ok: false, code: "internal", error: "internal error" });
+      }
     });
     return;
   }
