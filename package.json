@@ -2,6 +2,7 @@
   "name": "watchlist",
   "private": true,
   "scripts": {
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "test": "node --test"
   }
 }
